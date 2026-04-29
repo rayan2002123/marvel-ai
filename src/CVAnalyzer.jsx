@@ -58,63 +58,59 @@ export default function CVAnalyzer() {
   };
 
   const analyze = async () => {
-    if (!cvText.trim()) return;
+  if (!cvText.trim()) return;
 
-    setLoading(true);
-    setAtsScore(null);
+  setLoading(true);
+  setAtsScore(null);
 
-    try {
-      const userMsg = { role: "user", content: cvText };
-      setMessages((prev) => [...prev, userMsg]);
+  try {
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: cvText }
+    ]);
 
-      setAtsScore(calculateATS(cvText));
+    setAtsScore(calculateATS(cvText));
 
-      const res = await fetch("/api/analyze-cv", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ cvText }),
-});
+    const res = await fetch("/api/analyze-cv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cvText }),
+    });
 
-const text = await res.text(); // 👈 important debug
+    const data = await res.json();
 
-let data;
-try {
-  data = JSON.parse(text);
-} catch (e) {
-  throw new Error("Backend ne renvoie pas du JSON: " + text);
-}
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data?.error || "Erreur backend");
-
-      const words = data.result.split(" ");
-      let current = "";
-
-      for (let i = 0; i < words.length; i++) {
-        await new Promise((r) => setTimeout(r, 10));
-        current += words[i] + " ";
-
-        setMessages((prev) => {
-          const updated = [...prev];
-          if (updated[updated.length - 1]?.role === "ai-stream") {
-            updated[updated.length - 1].content = current;
-          } else {
-            updated.push({ role: "ai-stream", content: current });
-          }
-          return updated;
-        });
-      }
-
-      setCvText("");
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", content: "❌ " + err.message },
-      ]);
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      throw new Error(data?.error || "Erreur backend");
     }
-  };
+
+    const words = data.result.split(" ");
+    let current = "";
+
+    for (let i = 0; i < words.length; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+      current += words[i] + " ";
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        if (updated[updated.length - 1]?.role === "ai-stream") {
+          updated[updated.length - 1].content = current;
+        } else {
+          updated.push({ role: "ai-stream", content: current });
+        }
+        return updated;
+      });
+    }
+
+    setCvText("");
+  } catch (err) {
+    setMessages((prev) => [
+      ...prev,
+      { role: "ai", content: "❌ " + err.message },
+    ]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
   <div className={darkMode ? "app dark" : "app light"}>
