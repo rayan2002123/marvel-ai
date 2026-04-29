@@ -70,11 +70,19 @@ export default function CVAnalyzer() {
       setAtsScore(calculateATS(cvText));
 
       const res = await fetch("/api/analyze-cv", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cvText }),
-      });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ cvText }),
+});
 
+const text = await res.text(); // 👈 important debug
+
+let data;
+try {
+  data = JSON.parse(text);
+} catch (e) {
+  throw new Error("Backend ne renvoie pas du JSON: " + text);
+}
       const data = await res.json();
 
       if (!res.ok) throw new Error(data?.error || "Erreur backend");
